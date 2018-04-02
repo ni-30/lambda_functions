@@ -1,0 +1,6 @@
+{
+  "snsConfig" : {
+    "gcmArn": "arn:aws:sns:us-east-1:127887160317:app/GCM/AlexaSkill"
+  },
+  "consoleHealthCheckInterval" : 10
+}
