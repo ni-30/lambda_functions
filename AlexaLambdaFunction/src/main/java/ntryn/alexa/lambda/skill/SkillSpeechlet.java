@@ -2,7 +2,8 @@ package ntryn.alexa.lambda.skill;
 
 import ntryn.alexa.common.SessionHelper;
 import ntryn.alexa.common.SpeechletResponseBuilder;
-import ntryn.alexa.request.handler.intent.IntentHandler;
+import ntryn.alexa.request.handler.SessionEndedRequestHandler;
+import ntryn.alexa.request.handler.IntentHandler;
 import lombok.extern.slf4j.Slf4j;
 import com.amazon.speech.json.SpeechletRequestEnvelope;
 import com.amazon.speech.slu.Intent;
@@ -24,7 +25,19 @@ public class SkillSpeechlet implements SpeechletV2 {
     public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
         log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
 
-        SpeechletResponse response = SkillContext.context.getLaunchRequestRequestHandler().handle(requestEnvelope);
+        SpeechletResponse response;
+
+        try {
+            response = SkillContext.context.getLaunchRequestRequestHandler().handle(requestEnvelope);
+        } catch (Exception e) {
+            log.error("failed to handle on launch", e);
+            response = errorResponse("Unable process your request now.", null);
+        }
+
+        if(response.getNullableShouldEndSession()) {
+            new SessionEndedRequestHandler().processEndingSession(requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession());
+        }
+
         new SessionHelper(requestEnvelope.getSession()).setPreviousRequestId(requestEnvelope.getRequest().getRequestId());
         return response;
     }
@@ -32,27 +45,36 @@ public class SkillSpeechlet implements SpeechletV2 {
     public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
         log.info("onIntent requestId={}, sessionId={}, value={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
 
-        Intent intent = requestEnvelope.getRequest().getIntent();
-        if(intent == null || intent.getName() == null) {
-            log.error("invalid intent. intent is null or name is null. requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
-            new SessionHelper(requestEnvelope.getSession()).setPreviousRequestId(requestEnvelope.getRequest().getRequestId());
-            return errorResponse("This is unsupported.  Please try something else.", null);
+        SpeechletResponse response;
+        try {
+            Intent intent = requestEnvelope.getRequest().getIntent();
+            if (intent == null || intent.getName() == null) {
+                log.error("invalid intent. intent is null or name is null. requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
+                response = errorResponse("This is unsupported.  Please try something else.", null);
+            } else {
+                IntentHandler handler = SkillContext.context.getIntentHandler(intent.getName());
+                if (handler == null) {
+                    log.error("invalid intent name. Intent handler not found for intent={}, requestId={}, sessionId={}", intent.getName(), requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
+                    response = errorResponse("This is unsupported.  Please try something else.", null);
+                } else {
+                    response = handler.handle(requestEnvelope);
+                }
+            }
+        } catch (Exception e) {
+            log.error("failed to handle intent", e);
+            response = errorResponse("Unable process your request now.", null);
         }
 
-        IntentHandler handler = SkillContext.context.getIntentHandler(intent.getName());
-        if(handler == null) {
-            log.error("invalid intent name. Intent handler not found for intent={}, requestId={}, sessionId={}", intent.getName(), requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
-            new SessionHelper(requestEnvelope.getSession()).setPreviousRequestId(requestEnvelope.getRequest().getRequestId());
-            return errorResponse("This is unsupported.  Please try something else.", null);
+        if(response.getNullableShouldEndSession()) {
+            new SessionEndedRequestHandler().processEndingSession(requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession());
         }
 
-        SpeechletResponse response = handler.handle(requestEnvelope);
         new SessionHelper(requestEnvelope.getSession()).setPreviousRequestId(requestEnvelope.getRequest().getRequestId());
         return response;
     }
 
     public void onSessionEnded(SpeechletRequestEnvelope<SessionEndedRequest> requestEnvelope) {
-        log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
+        log.info("onSessionEnded requestId={}, sessionId={}, reason={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId(), requestEnvelope.getRequest().getReason());
         SkillContext.context.getSessionEndedRequestHandler().handle(requestEnvelope);
     }
 

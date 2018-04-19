@@ -16,6 +16,7 @@
         <log4j.version>1.2.17</log4j.version>
         <guava.version>19.0</guava.version>
         <dynamodb.version>1.11.6</dynamodb.version>
+        <sqs.version>1.11.310</sqs.version>
     </properties>
 
     <dependencies>
@@ -29,11 +30,6 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
             <version>${sns.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-dynamodb</artifactId>
-            <version>${dynamodb.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -52,6 +48,11 @@
             <artifactId>log4j</artifactId>
             <version>${log4j.version}</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sqs</artifactId>
+            <version>${sqs.version}</version>
         </dependency>
     </dependencies>
 

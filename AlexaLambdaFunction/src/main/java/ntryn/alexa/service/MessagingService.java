@@ -10,7 +10,9 @@ import com.amazonaws.services.sns.model.SubscribeResult;
 import lombok.Data;
 import ntryn.alexa.AwsConfig;
 import ntryn.alexa.common.Utils;
-import ntryn.alexa.dto.SnsMessage;
+import ntryn.alexa.dto.GcmMsg;
+
+import java.util.Map;
 
 public class MessagingService {
     private AmazonSNS amazonSNS;
@@ -30,17 +32,24 @@ public class MessagingService {
         return result.getEndpointArn();
     }
 
-    public void publishWithTargetArn(String endpointArn, SnsMessage message) {
+    public void publishWithTargetArn(String endpointArn, GcmMsg message) {
+        this.amazonSNS.publish(new PublishRequest()
+                                       .withTargetArn(endpointArn)
+                                       .withMessage(message.toGcmMsg())
+                                       .withMessageStructure("json"));
+    }
+
+    public void publishWithTargetArn(String endpointArn, Map<String, Object> message) {
         this.amazonSNS.publish(new PublishRequest()
                                        .withTargetArn(endpointArn)
                                        .withMessage(Utils.serialize(message))
                                        .withMessageStructure("json"));
     }
 
-    public void publishWithTopicArn(String topicArn, SnsMessage message) {
+    public void publishWithTopicArn(String topicArn, GcmMsg message) {
         this.amazonSNS.publish(new PublishRequest()
                                        .withTopicArn(topicArn)
-                                       .withMessage(Utils.serialize(message))
+                                       .withMessage(message.toGcmMsg())
                                        .withMessageStructure("json"));
     }
 

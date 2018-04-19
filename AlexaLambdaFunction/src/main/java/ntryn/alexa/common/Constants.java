@@ -8,4 +8,5 @@ public class Constants {
     public static final String QUIT_GAME = "quitGame";
     public static final String RESUME_GAME = "resumeGame";
     public static final String AVAILABILITY_REPROMPT = "availabilityReprompt";
+    public static final String SKILL_DISPLAY_NAME = "Voicetick";
 }

@@ -61,12 +61,30 @@ public class SessionHelper {
         return stage == null ? null : Stage.valueOf(stage);
     }
 
+    public void setTrigger(Trigger trigger, String triggerRequestId) {
+        session.setAttribute("trigger", trigger == null ? null : trigger.name());
+        setTriggerRequestId(triggerRequestId);
+    }
+
+    public Trigger getTrigger() {
+        String trigger = (String) session.getAttribute("trigger");
+        return trigger == null ? null : Trigger.valueOf(trigger);
+    }
+
+    private void setTriggerRequestId(String requestId) {
+        session.setAttribute("triggerRequestId", requestId);
+    }
+
+    public String getTriggerRequestId() {
+        return (String) session.getAttribute("triggerRequestId");
+    }
+
     public void setPreviousRequestId(String requestId) {
-        session.setAttribute("requestId", requestId);
+        session.setAttribute("previousRequestId", requestId);
     }
 
     public String getPreviousRequestId() {
-        return (String) session.getAttribute("requestId");
+        return (String) session.getAttribute("previousRequestId");
     }
 
     public void setConfirmation(Confirmation confirmation) {

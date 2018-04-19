@@ -16,5 +16,4 @@ public class UserEntity {
     private Boolean isConsoleLinked;
     private Stage stage;
     private Game game;
-    private String lastTriggerRefId;
 }

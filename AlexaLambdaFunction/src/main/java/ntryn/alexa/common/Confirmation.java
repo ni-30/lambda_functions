@@ -6,4 +6,5 @@ import lombok.Data;
 public class Confirmation {
     private String requestId;
     private String type;
+    private long timestamp;
 }

@@ -3,13 +3,13 @@ package ntryn.alexa.lambda.web;
 import com.amazonaws.services.lambda.runtime.Context;
 import lombok.extern.slf4j.Slf4j;
 import ntryn.alexa.AwsConfig;
+import ntryn.alexa.common.Game;
+import ntryn.alexa.common.Stage;
 import ntryn.alexa.common.Utils;
 import ntryn.alexa.dto.LambdaHttpRequest;
 import ntryn.alexa.dto.LambdaHttpResponse;
 import ntryn.alexa.dto.UserEntity;
 import ntryn.alexa.lambda.AbstractRequestStreamHandler;
-import ntryn.alexa.service.InvalidEntityDataException;
-import ntryn.alexa.service.UserNotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,11 +51,16 @@ public class WebRequestHandler extends AbstractRequestStreamHandler<LambdaHttpRe
                     return failureResponse(400, "query param - uid is null/empty");
                 }
 
-                UserEntity entity = WebContext.context.getDatabaseService().get(uid);
+                UserEntity entity = WebContext.context.getQueueService().pull(uid, 5);
                 if(entity == null) {
                     log.info("user not found. requestId={}, httpMethod={}, path={}", request.getRequestContext().getRequestId(), request.getHttpMethod(), request.getPath());
                     return failureResponse(404, "user not found for uid - " + uid);
                 }
+                if(!WebContext.context.getQueueService().push("final", uid, Utils.deserialize(entity, Map.class))) {
+                    return failureResponse(500, "failed to create final data");
+                }
+                if(entity.getStage() == null) entity.setStage(Stage.MENU);
+                if(entity.getGame() == null) entity.setGame(Game.values()[0]);
                 entity.setGcmEndpointArn(null);
                 entity.setEmailId(null);
                 entity.setUid(null);
@@ -94,14 +99,8 @@ public class WebRequestHandler extends AbstractRequestStreamHandler<LambdaHttpRe
                     return failureResponse(400, "empty request body");
                 }
 
-                try {
-                    WebContext.context.getDatabaseService().update(uid, updateEntity);
-                } catch (UserNotFoundException e) {
-                    log.info("user not found. uid={}, requestId={}, httpMethod={}, path={}", uid, request.getRequestContext().getRequestId(), request.getHttpMethod(), request.getPath(), e);
+                if(!WebContext.context.getQueueService().push("consoleLinked", uid, updateEntity)) {
                     return failureResponse(404, "user not found");
-                } catch (InvalidEntityDataException e) {
-                    log.info("invalid data update data. uid={}, requestId={}, httpMethod={}, path={}", uid, request.getRequestContext().getRequestId(), request.getHttpMethod(), request.getPath(), e);
-                    return failureResponse(400, e.getMessage());
                 }
 
                 return successResponse(null);
@@ -136,14 +135,37 @@ public class WebRequestHandler extends AbstractRequestStreamHandler<LambdaHttpRe
                     return failureResponse(400, "invalid gcm token");
                 }
                 putGcmEndpointArn(entity, endpointArn);
+                entity.put("isConsoleLinked", true);
 
-                try {
-                    WebContext.context.getDatabaseService().create(uid, entity);
-                } catch (InvalidEntityDataException e) {
-                    log.info("invalid data update data. uid={}, requestId={}, httpMethod={}, path={}", uid, request.getRequestContext().getRequestId(), request.getHttpMethod(), request.getPath(), e);
-                    return failureResponse(400, e.getMessage());
+                if(WebContext.context.getQueueService().createQueue(uid) == null) {
+                    return failureResponse(500, "failed to create sqs queue");
+                }
+                if(!WebContext.context.getQueueService().push("consoleLinked", uid, entity)) {
+                    return failureResponse(500, "failed to push to sqs queue");
                 }
                 return successResponse(null);
+
+            case "/authorization":
+                if(request.getBody() == null || !request.getBody().contains("code=")) {
+                    return failureResponse(400, "invalid request");
+                }
+
+                Map<String, Object> response = new HashMap<>();
+                String[] queryParams = request.getBody().split("&");
+                for(String kv : queryParams) {
+                    String[] arr = kv.split("=");
+                    if("code".equals(arr[0])) {
+                        if(arr.length != 2) {
+                            return failureResponse(400, "invalid request");
+                        }
+                        response.put("access_token", arr[1]);
+                        response.put("refresh_token", arr[1]);
+                        break;
+                    }
+                }
+                response.put("token_type", "Bearer");
+                response.put("expires_in", 10368000);
+                return successResponse(Utils.serialize(response));
             default:
                 return failureResponse(400, "invalid path for POST http method");
         }
@@ -166,6 +188,11 @@ public class WebRequestHandler extends AbstractRequestStreamHandler<LambdaHttpRe
         response.setStatusCode(200);
         response.setIsBase64Encoded(true);
         response.getHeaders().put("Access-Control-Allow-Origin", "*");
+        if(body == null) {
+            Map map = new HashMap();
+            map.put("status", "success");
+            body = Utils.serialize(map);
+        }
         response.setBody(body);
         return response;
     }

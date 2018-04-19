@@ -8,7 +8,7 @@ import ntryn.alexa.common.Trigger;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ConsoleMessage implements SnsMessage {
+public class ConsoleMessage implements GcmMsg {
     private long timestamp = System.currentTimeMillis();
     private Stage stage;
     private Game game;

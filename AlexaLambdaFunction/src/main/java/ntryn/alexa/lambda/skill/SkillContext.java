@@ -1,11 +1,11 @@
 package ntryn.alexa.lambda.skill;
 
 import ntryn.alexa.annotation.Intent;
-import ntryn.alexa.service.DatabaseService;
 import ntryn.alexa.service.MessagingService;
 import ntryn.alexa.request.handler.RequestHandler;
-import ntryn.alexa.request.handler.intent.IntentHandler;
+import ntryn.alexa.request.handler.IntentHandler;
 import lombok.extern.slf4j.Slf4j;
+import ntryn.alexa.service.QueueService;
 import org.apache.commons.lang3.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +27,15 @@ public class SkillContext {
     private RequestHandler<SessionEndedRequest> sessionEndedRequestHandler;
     private MessagingService messagingService;
     private DirectiveServiceClient directiveServiceClient;
+    private QueueService queueService;
 
-    private DatabaseService databaseService;
+    void setQueueService(QueueService queueService) {
+        this.queueService = queueService;
+    }
+
+    public QueueService getQueueService() {
+        return queueService;
+    }
 
     void setSessionStartedRequestHandler(RequestHandler<SessionStartedRequest> sessionStartedRequestHandler) {
         this.sessionStartedRequestHandler = sessionStartedRequestHandler;
@@ -50,10 +57,6 @@ public class SkillContext {
         this.directiveServiceClient = directiveServiceClient;
     }
 
-    void setDatabaseService(DatabaseService databaseService) {
-        this.databaseService = databaseService;
-    }
-
     public RequestHandler<SessionStartedRequest> getSessionStartedRequestHandler() {
         return sessionStartedRequestHandler;
     }
@@ -72,10 +75,6 @@ public class SkillContext {
 
     public DirectiveServiceClient getDirectiveServiceClient() {
         return directiveServiceClient;
-    }
-
-    public DatabaseService getDatabaseService() {
-        return databaseService;
     }
 
     /**

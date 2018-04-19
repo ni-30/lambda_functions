@@ -1,15 +1,23 @@
 package ntryn.alexa.common;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import com.amazon.speech.speechlet.Directive;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.SsmlOutputSpeech;
 
 public class SpeechletResponseBuilder {
     private String speechText;
     private String repromptText;
     private String cardTitle;
     private String cardContent;
+    private String audioUrl;
     private boolean shouldEndSession = true;
 
     public static SpeechletResponseBuilder builder() {
@@ -36,13 +44,18 @@ public class SpeechletResponseBuilder {
         return this;
     }
 
+    public SpeechletResponseBuilder audioUrl(String audioUrl) {
+        this.audioUrl = audioUrl;
+        return this;
+    }
+
     public SpeechletResponseBuilder shouldEndSession(boolean shouldEndSession) {
         this.shouldEndSession = shouldEndSession;
         return this;
     }
 
     public SpeechletResponse build() {
-        PlainTextOutputSpeech speech = getPlainTextOutputSpeech(speechText);
+        OutputSpeech speech = audioUrl == null ? getPlainTextOutputSpeech(speechText) : getSsmlOutputSpeechWithAudio(speechText, audioUrl);
 
         if(repromptText == null) {
             SpeechletResponse response =  cardTitle == null
@@ -67,6 +80,13 @@ public class SpeechletResponseBuilder {
     private static PlainTextOutputSpeech getPlainTextOutputSpeech(String speechText) {
         PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
         speech.setText(speechText);
+        return speech;
+    }
+
+    private static SsmlOutputSpeech getSsmlOutputSpeechWithAudio(String speechText, String audioUrl) {
+        SsmlOutputSpeech speech = new SsmlOutputSpeech();
+        speech.setSsml("<speak><audio src='" + audioUrl + "'/>" +  (speechText == null ? "" : speechText) + "</speak>");
+        speech.setId(UUID.randomUUID().toString());
         return speech;
     }
 

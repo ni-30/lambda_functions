@@ -32,4 +32,10 @@ public class Utils {
         }
     }
 
+    public static String convertAlexaTokenToUid(String token) {
+        return token;
+    }
+
+
+
 }

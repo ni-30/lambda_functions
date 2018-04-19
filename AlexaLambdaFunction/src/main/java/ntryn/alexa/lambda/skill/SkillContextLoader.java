@@ -1,15 +1,19 @@
 package ntryn.alexa.lambda.skill;
 
-import ntryn.alexa.request.handler.intent.ConfirmationIntentHandler;
+import ntryn.alexa.request.handler.ConfirmationIntentHandler;
+import ntryn.alexa.request.handler.HowToPlayIntentHandler;
+import ntryn.alexa.request.handler.ShutdownIntentHandler;
 import ntryn.alexa.service.MessagingService;
-import ntryn.alexa.request.handler.intent.AmazonCancelIntentHandler;
-import ntryn.alexa.request.handler.intent.AmazonHelpIntentHandler;
-import ntryn.alexa.request.handler.intent.AmazonStopIntentHandler;
+import ntryn.alexa.request.handler.AmazonCancelIntentHandler;
+import ntryn.alexa.request.handler.AmazonHelpIntentHandler;
+import ntryn.alexa.request.handler.AmazonStopIntentHandler;
 import ntryn.alexa.request.handler.LaunchRequestHandler;
 import ntryn.alexa.request.handler.SessionEndedRequestHandler;
 import ntryn.alexa.request.handler.SessionStartedRequestHandler;
 import lombok.extern.slf4j.Slf4j;
-import ntryn.alexa.request.handler.intent.ControllerIntentHandler;
+import ntryn.alexa.request.handler.ControllerIntentHandler;
+import ntryn.alexa.service.QueueService;
+
 import com.amazon.speech.speechlet.services.DirectiveServiceClient;
 
 /**
@@ -23,7 +27,7 @@ class SkillContextLoader {
     public static void load() {
         setLaunchAndSessionRequestHandlers();
         addIntentHandlers();
-        loadMessagingService();
+        loadMessagingAndQueueServices();
         loadDirectiveServiceClient();
         log.info("successfully loaded skill context");
     }
@@ -48,13 +52,16 @@ class SkillContextLoader {
         SkillContext.context.addIntentHandler(AmazonStopIntentHandler.class);
         SkillContext.context.addIntentHandler(ControllerIntentHandler.class);
         SkillContext.context.addIntentHandler(ConfirmationIntentHandler.class);
+        SkillContext.context.addIntentHandler(ShutdownIntentHandler.class);
+        SkillContext.context.addIntentHandler(HowToPlayIntentHandler.class);
     }
 
     /**
      * load messaging service
      * */
-    private static void loadMessagingService() {
+    private static void loadMessagingAndQueueServices() {
         SkillContext.context.setMessagingService(new MessagingService());
+        SkillContext.context.setQueueService(new QueueService());
     }
 
     /**
